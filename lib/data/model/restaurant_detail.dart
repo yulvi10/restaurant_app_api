@@ -35,9 +35,9 @@ class Restaurant {
     final String city;
     final String address;
     final String pictureId;
+    final double rating;
     final List<Category> categories;
     final Menus menus;
-    final double rating;
     final List<CustomerReview> customerReviews;
 
     Restaurant({
@@ -47,9 +47,9 @@ class Restaurant {
         required this.city,
         required this.address,
         required this.pictureId,
+        required this.rating,
         required this.categories,
         required this.menus,
-        required this.rating,
         required this.customerReviews,
     });
 
@@ -64,9 +64,9 @@ class Restaurant {
         city: json["city"],
         address: json["address"],
         pictureId: json["pictureId"],
+        rating: json["rating"]?.toDouble(),
         categories: List<Category>.from(json["categories"].map((x) => Category.fromJson(x))),
         menus: Menus.fromJson(json["menus"]),
-        rating: json["rating"]?.toDouble(),
         customerReviews: List<CustomerReview>.from(json["customerReviews"].map((x) => CustomerReview.fromJson(x))),
     );
 
@@ -77,9 +77,9 @@ class Restaurant {
         "city": city,
         "address": address,
         "pictureId": pictureId,
+        "rating": rating,
         "categories": List<dynamic>.from(categories.map((x) => x.toJson())),
         "menus": menus.toJson(),
-        "rating": rating,
         "customerReviews": List<dynamic>.from(customerReviews.map((x) => x.toJson())),
     };
 }

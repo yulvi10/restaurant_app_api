@@ -39,7 +39,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
           });
         },
         children: <Widget>[
-          const RestaurantListPage(),
+          RestaurantListPage(),
           const RestaurantSearchListPage(),
           const RestaurantFavoritePage(),
           const ProfilePage(),

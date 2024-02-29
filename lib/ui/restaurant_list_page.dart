@@ -1,19 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:restaurant_app_api/provider/restaurant_list_provider.dart';
+import 'package:restaurant_app_api/provider/scheduling_provider.dart';
 import 'package:restaurant_app_api/ui/no_internet_page.dart';
+import 'package:restaurant_app_api/ui/restaurant_detail_page.dart';
+import 'package:restaurant_app_api/ui/settings_page.dart';
+import 'package:restaurant_app_api/utils/notification_helper.dart';
 import 'package:restaurant_app_api/widgets/card_restaurant.dart';
 
-class RestaurantListPage extends StatelessWidget {
-  const RestaurantListPage({Key? key}) : super(key: key);
+class RestaurantListPage extends StatefulWidget {
+  RestaurantListPage({Key? key}) : super(key: key);
 
   static const routeName = '/restaurant_list';
 
   @override
+  State<RestaurantListPage> createState() => _RestaurantListPageState();
+}
+
+class _RestaurantListPageState extends State<RestaurantListPage> {
+  final NotificationHelper _notificationHelper = NotificationHelper();
+
+  @override
   Widget build(BuildContext context) {
     final restaurantListProvider = Provider.of<RestaurantListProvider>(context);
+
+    _notificationHelper
+        .configureSelectNotificationSubject(RestaurantListPage.routeName);
+
+    ChangeNotifierProvider<SchedulingProvider>(
+      create: (_) => SchedulingProvider(),
+      child: const SettingsPage(),
+    );
+
     return Scaffold(
-      body: restaurantListProvider.hasInternet 
+      body: restaurantListProvider.hasInternet
           ? SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -70,9 +90,11 @@ class RestaurantListPage extends StatelessWidget {
                             );
                           } else {
                             return ListView.builder(
-                              itemCount: provider.restaurantList.restaurants.length,
+                              itemCount:
+                                  provider.restaurantList.restaurants.length,
                               itemBuilder: (context, index) {
-                                var restaurant = provider.restaurantList.restaurants[index];
+                                var restaurant =
+                                    provider.restaurantList.restaurants[index];
                                 return CardRestaurant(restaurant: restaurant);
                               },
                             );
@@ -88,5 +110,18 @@ class RestaurantListPage extends StatelessWidget {
               restaurantListProvider.retryFetchList();
             }),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationHelper
+        .configureSelectNotificationSubject(RestaurantDetailPage.routeName);
+  }
+
+  @override
+  void dispose() {
+    selectNotificationSubject.close();
+    super.dispose();
   }
 }

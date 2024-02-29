@@ -31,7 +31,22 @@ class RestaurantDetailPage extends StatelessWidget {
                 child: Text('Error: ${provider.errorMessage}'),
               );
             } else {
-              return _buildRestaurantDetail(provider, context);
+              // return _buildRestaurantDetail(provider, context);
+              return FutureBuilder<bool>(
+                future: Provider.of<DatabaseProvider>(context)
+                    .isBookmarked(provider.detailRestaurant.restaurant.id),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else {
+                    final isBookmarked = snapshot.data ?? false;
+                    return _buildRestaurantDetail(
+                        provider, context, isBookmarked);
+                  }
+                },
+              );
             }
           },
         ),
@@ -40,7 +55,10 @@ class RestaurantDetailPage extends StatelessWidget {
   }
 
   Widget _buildRestaurantDetail(
-      RestaurantDetailProvider provider, BuildContext context) {
+    RestaurantDetailProvider provider,
+    BuildContext context,
+    bool isBookmarked,
+  ) {
     final restaurant = provider.detailRestaurant.restaurant;
     final customerReviews = provider.customerReviews;
 
@@ -75,19 +93,16 @@ class RestaurantDetailPage extends StatelessWidget {
               Positioned(
                 top: 16.0,
                 right: 16.0,
-                child: Consumer<DatabaseProvider>(
-                  builder: (context, databaseProvider, child) {
-                    return FutureBuilder<bool>(
-                      future: databaseProvider.isBookmarked(restaurant.id),
-                      builder: (context, snapshot) {
-                        var isBookmarked = snapshot.data ?? false;
-                        return FavoriteButton(
-                          restaurantId: restaurant.id,
-                          isFavorite: isBookmarked,
-                        );
-                      },
-                    );
-                  },
+                child: Container(
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color.fromARGB(190, 158, 158, 158),
+                  ),
+                  child: FavoriteButton(
+                    restaurantId: restaurant.id,
+                    isFavorite: isBookmarked,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
@@ -384,11 +399,13 @@ class RestaurantDetailPage extends StatelessWidget {
 class FavoriteButton extends StatefulWidget {
   final String restaurantId;
   final bool isFavorite;
+  final Color? color;
 
   const FavoriteButton({
     Key? key,
     required this.restaurantId,
     required this.isFavorite,
+    this.color,
   }) : super(key: key);
 
   @override
@@ -408,7 +425,7 @@ class _FavoriteButtonState extends State<FavoriteButton> {
   Widget build(BuildContext context) {
     return IconButton(
       icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
-      color: Colors.red,
+      color: isFavorite ? Colors.red : widget.color,
       onPressed: () {
         setState(() {
           isFavorite = !isFavorite;

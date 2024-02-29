@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:restaurant_app_api/data/db/database_helper.dart';
-import 'package:restaurant_app_api/data/model/restaurant_detail.dart';
+import 'package:restaurant_app_api/data/model/restaurant_list.dart';
 import 'package:restaurant_app_api/utils/result_state.dart';
 import 'package:restaurant_app_api/data/api/api_service.dart';
-
-
 
 class DatabaseProvider extends ChangeNotifier {
   final DatabaseHelper databaseHelper;
@@ -38,29 +36,36 @@ class DatabaseProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // void addBookmark(String restaurantId) async {
-  //   try {
-  //     await databaseHelper.insertBookmark(Restaurant.fromJson({'id': restaurantId}));
-  //     _getBookmarks();
-  //   } catch (e) {
-  //     _state = ResultState.error;
-  //     _message = 'Error: $e';
-  //     notifyListeners();
-  //   }
-  // }
 
   void addBookmark(String restaurantId) async {
     try {
       print(
-          'Adding restaurant with ID: $restaurantId to bookmarks (Database provider process)...'); // Menampilkan ID restoran yang akan ditambahkan ke bookmark di console
-      await databaseHelper
-          .insertBookmark(Restaurant.fromJson({'id': restaurantId}));
+          'Adding restaurant with ID: $restaurantId to bookmarks (Database provider process)...');
+      // Panggil method restaurantDetail dari ApiService untuk mendapatkan detail restoran
+      final RestaurantList restaurantList =
+          await ApiService().restaurantList(); // Hapus argumen restaurant
+      // Ambil restaurant pertama dari daftar restoran
+      final Restaurant restaurant = restaurantList.restaurants.firstWhere(
+          (element) => element.id == restaurantId,
+          orElse: () => throw Exception(
+              'Restaurant with ID $restaurantId not found')); // Filter restoran berdasarkan ID
+      // Buat objek Restaurant baru dengan hanya menyimpan data yang diinginkan
+      final bookmarkRestaurant = Restaurant(
+        id: restaurant.id,
+        name: restaurant.name,
+        description: restaurant.description,
+        city: restaurant.city,
+        pictureId: restaurant.pictureId,
+        rating: restaurant.rating,
+      );
+      // Simpan restaurant ke dalam database
+      await databaseHelper.insertBookmark(bookmarkRestaurant);
       _getBookmarks();
-      print(
-          'Restaurant with ID: $restaurantId added to bookmarks successfully .'); // Menampilkan pesan berhasil pada console
+      // print('Restaurant with ID: $restaurantId added to bookmarks successfully .');
+      print('Restaurant added to bookmarks successfully .');
     } catch (e) {
       print(
-          'Failed to add restaurant with ID: $restaurantId to bookmarks. (Database provider process)'); // Menampilkan pesan gagal pada console
+          'Failed to add restaurant with ID: $restaurantId to bookmarks. (Database provider process)');
       _state = ResultState.error;
       _message = 'Error: $e';
       notifyListeners();

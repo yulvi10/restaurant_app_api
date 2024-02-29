@@ -1,44 +1,58 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
+import 'package:restaurant_app_api/common/navigation.dart';
 import 'package:restaurant_app_api/data/db/database_helper.dart';
 import 'package:restaurant_app_api/provider/database_provider.dart';
 import 'package:restaurant_app_api/provider/restaurant_list_provider.dart';
+import 'package:restaurant_app_api/provider/scheduling_provider.dart';
 import 'package:restaurant_app_api/ui/home_page.dart';
 import 'package:restaurant_app_api/ui/splahscreen.dart';
+import 'package:restaurant_app_api/utils/background_service.dart';
+import 'package:restaurant_app_api/utils/notification_helper.dart';
 
-void main() {
-  DatabaseHelper databaseHelper =
-      DatabaseHelper(); // Membuat instance DatabaseHelper
-  DatabaseProvider databaseProvider = DatabaseProvider(
-      databaseHelper:
-          databaseHelper); // Memberikan instance DatabaseHelper ke DatabaseProvider
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  final NotificationHelper _notificationHelper = NotificationHelper();
+  final BackgroundService _service = BackgroundService();
+  
+  _service.initializeIsolate();
+  
+  if (Platform.isAndroid) {
+    await AndroidAlarmManager.initialize();
+  }
+  
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  await _notificationHelper.initNotifications(flutterLocalNotificationsPlugin);
+
   runApp(MyApp(
-    databaseHelper: databaseHelper,
-    databaseProvider: databaseProvider,
+    flutterLocalNotificationsPlugin: flutterLocalNotificationsPlugin,
   ));
 }
 
 class MyApp extends StatelessWidget {
-  final DatabaseHelper databaseHelper;
-  final DatabaseProvider databaseProvider;
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
-  const MyApp({
-    required this.databaseHelper,
-    required this.databaseProvider,
-    Key? key,
-  }) : super(key: key);
+  MyApp({required this.flutterLocalNotificationsPlugin});
 
   @override
   Widget build(BuildContext context) {
+    final DatabaseHelper databaseHelper = DatabaseHelper();
+    final DatabaseProvider databaseProvider =
+        DatabaseProvider(databaseHelper: databaseHelper);
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => RestaurantListProvider()),
+        ChangeNotifierProvider(create: (_) => SchedulingProvider()), // Added
         ChangeNotifierProvider.value(
-          value: databaseProvider, // Menggunakan value provider untuk instance yang sudah dibuat sebelumnya
+          value: databaseProvider,
         ),
-        // ChangeNotifierProvider(
-        //   create: (_) => DatabaseProvider(databaseHelper: DatabaseHelper()),
-        // ),
       ],
       child: MaterialApp(
         title: 'Restaurant App',
@@ -52,6 +66,7 @@ class MyApp extends StatelessWidget {
           SplashScreen.routeName: (context) => SplashScreen(),
           HomePage.routeName: (context) => HomePage(),
         },
+        navigatorKey: navigatorKey,
       ),
     );
   }

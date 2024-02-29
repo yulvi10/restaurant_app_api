@@ -1,6 +1,8 @@
+import 'dart:convert';
+
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:restaurant_app_api/data/model/restaurant_detail.dart';
+import 'package:restaurant_app_api/data/model/restaurant_list.dart';
 
 class DatabaseHelper {
   static DatabaseHelper? _instance;
@@ -23,41 +25,56 @@ class DatabaseHelper {
   }
 
   Future<Database> _initializeDb() async {
-    var path = await getDatabasesPath();
-    var db = await openDatabase(
-      join(path, 'restaurant.db'),
-      onCreate: (db, version) async {
-        try {
-          await db.execute('''CREATE TABLE $_tableFavorite(
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            description TEXT,
-            pictureId TEXT,
-            city TEXT,
-            rating TEXT
-          )
-          ''');
-          print('Table $_tableFavorite created successfully'); // Tampilkan pesan keberhasilan pembuatan tabel di konsol
-        } catch (e) {
-          print('Error creating table: $e');
-        }
-      },
-      version: 1,
-    );
+  var path = await getDatabasesPath();
+  var db = await openDatabase(
+    join(path, 'restaurant.db'),
+    onCreate: (db, version) async {
+      try {
+        await db.execute('''CREATE TABLE $_tableFavorite (
+          id TEXT PRIMARY KEY,
+          name TEXT,
+          description TEXT,
+          city TEXT,
+          pictureId TEXT,
+          rating REAL
+        )''');
+        print('Table $_tableFavorite created successfully');
+      } catch (e) {
+        print('Error creating table: $e');
+      }
+    },
+    version: 1,
+  );
 
-    return db;
-  }
+  return db;
+}
 
   // Future<void> insertBookmark(Restaurant restaurant) async {
   //   final db = await database;
   //   await db!.insert(_tableFavorite, restaurant.toJson());
   // }
 
-  Future<void> insertBookmark(Restaurant restaurantId) async {
+  // Future<void> insertBookmark(Restaurant restaurant) async {
+  //   final db = await database;
+  //   print('Inserting restaurant with ID: ${restaurant.id} into bookmarks...');
+  //   await db!.insert(_tableFavorite, restaurant.toJson());
+  // }
+
+  Future<void> insertBookmark(Restaurant restaurant) async {
     final db = await database;
-    print(
-        'Inserting restaurant with ID: ${restaurantId.id} into bookmarks...'); // Menampilkan ID restoran yang akan disimpan ke bookmark di console
-    await db!.insert(_tableFavorite, restaurantId.toJson());
+    print('Inserting restaurant with ID: ${restaurant.id} into bookmarks...');
+    await db!.insert(
+      _tableFavorite,
+      {
+        'id': restaurant.id,
+        'name': restaurant.name,
+        'description': restaurant.description,
+        'city': restaurant.city,
+        // 'address': restaurant.address,
+        'pictureId': restaurant.pictureId,
+        'rating': restaurant.rating,
+      },
+    );
   }
 
   Future<List<Restaurant>> getBookmarks() async {
@@ -67,7 +84,7 @@ class DatabaseHelper {
     return results.map((res) => Restaurant.fromJson(res)).toList();
   }
 
-  Future<Map> getBookmarkById(String id) async {
+  Future<Map<String, dynamic>> getBookmarkById(String id) async {
     final db = await database;
 
     List<Map<String, dynamic>> results = await db!.query(

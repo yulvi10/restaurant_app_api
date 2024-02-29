@@ -1,4 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:restaurant_app_api/provider/scheduling_provider.dart';
+import 'package:restaurant_app_api/widgets/custom_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -9,7 +14,15 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _darkMode = false;
-  bool _notification = true;
+  bool _notification = false; // Default switch off
+
+  @override
+  void initState() {
+    super.initState();
+    // Set initial notification status
+    _notification =
+        Provider.of<SchedulingProvider>(context, listen: false).isScheduled;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +61,50 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             SwitchListTile(
-              title: Text('Receive Notifications'),
+              title: Text('Daily Reminder'),
               value: _notification,
-              onChanged: (value) {
+              onChanged: (value) async {
                 setState(() {
                   _notification = value;
                 });
-                // Implement logic to enable/disable notifications
+                final schedulingProvider =
+                    Provider.of<SchedulingProvider>(context, listen: false);
+                await schedulingProvider.scheduledRestaurant(value);
+                if (value) {
+                  // Show alert notification when scheduling news is turned on
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: Text('Notification'),
+                      content: Text('Daily Reminder has been turned on.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                } else {
+                  // Show alert notification when scheduling news is turned off
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: Text('Notification'),
+                      content: Text('Daily Reminder has been turned off.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
               },
             ),
           ],
@@ -62,15 +112,64 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-}
 
-void main() {
-  runApp(MaterialApp(
-    title: 'Settings Demo',
-    theme: ThemeData(
-      primarySwatch: Colors.blue,
-    ),
-    darkTheme: ThemeData.dark(), // Dark theme configuration
-    home: SettingsPage(),
-  ));
+  // Widget _buildList(BuildContext context) {
+  //   return ListView(
+  //     shrinkWrap: true,
+  //     children: [
+  //       ListTile(
+  //         title: const Text('Daily Reminder'),
+  //         trailing: Consumer<SchedulingProvider>(
+  //           builder: (context, scheduled, _) {
+  //             return Switch.adaptive(
+  //               value: scheduled.isScheduled,
+  //               onChanged: (value) async {
+  //                 if (Platform.isIOS) {
+  //                   customDialog(context);
+  //                 } else {
+  //                   scheduled.scheduledRestaurant(value);
+  //                 }
+  //               },
+  //             );
+  //           },
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
+
+  Widget _buildList(BuildContext context) {
+    return ListView(
+      children: [
+        Material(
+          child: ListTile(
+            title: const Text('Dark Theme'),
+            trailing: Switch.adaptive(
+              value: false,
+              onChanged: (value) => customDialog(context),
+            ),
+          ),
+        ),
+        Material(
+          child: ListTile(
+            title: const Text('Scheduling News'),
+            trailing: Consumer<SchedulingProvider>(
+              builder: (context, scheduled, _) {
+                return Switch.adaptive(
+                  value: scheduled.isScheduled,
+                  onChanged: (value) async {
+                    if (Platform.isIOS) {
+                      customDialog(context);
+                    } else {
+                      scheduled.scheduledRestaurant(value);
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
